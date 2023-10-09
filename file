@@ -1,0 +1,58 @@
+import csv
+
+user_anime_dict = {}
+with open('rating.csv', 'r', encoding='utf-8') as rating_file:
+    reader = csv.reader(rating_file)
+    next(reader)  
+    for row in reader:
+        user_id, anime_id, rating = row
+        if user_id not in user_anime_dict:
+            user_anime_dict[user_id] = []
+        if int(rating) != -1: 
+            user_anime_dict[user_id].append(anime_id)
+
+
+anime_together_dict = {}
+for user_id, anime_list in user_anime_dict.items():
+    for anime_id1 in anime_list:
+        if anime_id1 not in anime_together_dict:
+            anime_together_dict[anime_id1] = {}
+        for anime_id2 in anime_list:
+            if anime_id1 != anime_id2:
+                if anime_id2 not in anime_together_dict[anime_id1]:
+                    anime_together_dict[anime_id1][anime_id2] = 0
+                anime_together_dict[anime_id1][anime_id2] += 1
+
+import json
+
+with open('recommendations.json', 'w', encoding='utf-8') as json_file:
+    json.dump(anime_together_dict, json_file, ensure_ascii=False, indent=4)
+
+with open('recommendations.json', 'r', encoding='utf-8') as json_file:
+    anime_recommendations = json.load(json_file)
+
+anime_id_to_name = {}
+anime_name_to_id = {}
+with open('anime.csv', 'r', encoding='utf-8') as anime_file:
+    reader = csv.reader(anime_file)
+    next(reader)  
+    for row in reader:
+        anime_id, anime_name, *_ = row
+        anime_id_to_name[anime_id] = anime_name
+        anime_name_to_id[anime_name] = anime_id
+
+
+target_anime_name = "One Piece"
+target_anime_id = anime_name_to_id.get(target_anime_name)
+
+if target_anime_id in anime_recommendations:
+    recommendations = anime_recommendations[target_anime_id]
+    sorted_recommendations = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+    recommended_anime_ids = [anime_id for anime_id, _ in sorted_recommendations]
+    recommended_anime_names = [anime_id_to_name.get(anime_id) for anime_id in recommended_anime_ids]
+
+    print(f"Рекомендації для {target_anime_name}:")
+    for anime_name in recommended_anime_names:
+        print(anime_name)
+else:
+    print(f"Аніме '{target_anime_name}' не знайдено в базі даних рекомендацій.")
